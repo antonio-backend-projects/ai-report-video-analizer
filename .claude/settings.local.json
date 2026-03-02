@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(claude-developer-platform)",
+      "Skill(claude-developer-platform:*)",
+      "Bash(pip install -r requirements.txt)",
+      "Bash(python analyze_video.py --help)",
+      "Bash(winget install --id Gyan.FFmpeg -e --accept-source-agreements --accept-package-agreements)",
+      "Read(//c/Users/hp/**)",
+      "Read(//c/ProgramData/**)",
+      "Read(//c/Program Files/ffmpeg/**)",
+      "Bash(python analyze_video.py \"videos/PN1-2026-02-20 11-45-38.mp4\" --keep-frames)",
+      "Bash(python -X utf8 analyze_video.py \"videos/PN1-2026-02-20 11-45-38.mp4\" --keep-frames)",
+      "Bash(python -X utf8 analyze_video.py \"videos/E01-2026-02-20 11-51-01.mp4\" --keep-frames)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\hp\\.claude\\projects\\c--Users-hp-Documents-GitHub-ai-video-analizer"
+    ]
+  }
+}
