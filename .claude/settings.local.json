@@ -11,7 +11,8 @@
       "Read(//c/Program Files/ffmpeg/**)",
       "Bash(python analyze_video.py \"videos/PN1-2026-02-20 11-45-38.mp4\" --keep-frames)",
       "Bash(python -X utf8 analyze_video.py \"videos/PN1-2026-02-20 11-45-38.mp4\" --keep-frames)",
-      "Bash(python -X utf8 analyze_video.py \"videos/E01-2026-02-20 11-51-01.mp4\" --keep-frames)"
+      "Bash(python -X utf8 analyze_video.py \"videos/E01-2026-02-20 11-51-01.mp4\" --keep-frames)",
+      "Bash(ls \"c:\\\\Users\\\\hp\\\\Documents\\\\GitHub\\\\ai-video-analizer\\\\docs\"\" && cat \"c:UsershpDocumentsGitHubai-video-analizermkdocs.yml \")"
     ],
     "additionalDirectories": [
       "C:\\Users\\hp\\.claude\\projects\\c--Users-hp-Documents-GitHub-ai-video-analizer"

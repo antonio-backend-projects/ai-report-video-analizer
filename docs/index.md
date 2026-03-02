@@ -1,70 +1,82 @@
-# AI Video Analyzer
+# AI Report Video Analyzer
 
-Strumento Python che analizza video muti usando **Claude Vision** (claude-opus-4-6) e genera automaticamente un report strutturato del processo mostrato.
+A Python tool that analyzes mute screen recordings using **Claude Vision** (claude-opus-4-6) and automatically generates a **structured process report**.
 
 ---
 
-## Come funziona
+## How it works
 
 ```
 VIDEO.mp4
    │
    ▼
-[ffmpeg] estrae 1 frame/secondo
+[ffmpeg] extracts 1 frame/second
    │
    ▼
-[Claude Vision] descrive ogni frame (cosa vede, interfacce, azioni)
+[Claude Vision] describes each frame (UI, user actions, messages)
    │
    ▼
-[Claude Opus] analizza l'intero flusso e genera il report
+[Claude Opus] analyzes the full flow and generates the report
    │
    ▼
 output/
- ├── video_descrizioni.txt   ← trascrizione visiva frame-by-frame
- └── video_analisi.md        ← report strutturato del processo
+ ├── video_descriptions.txt   ← frame-by-frame visual transcript
+ └── video_analysis.md        ← structured process report
 ```
 
 ---
 
-## Cosa produce
+## What it produces
 
-Dando in input un video che registra un'operazione (tutorial software, flusso UX, processo aziendale...), ottieni:
+Given a screen recording of any operation (software tutorial, UX flow, business process...), you get:
 
-- **Descrizioni frame-by-frame** — cosa appare in ogni secondo del video
-- **Report di analisi** con:
-    - Obiettivo del processo
-    - Flusso step-by-step
-    - Elementi tecnici identificati
-    - Osservazioni e colli di bottiglia
-    - Suggerimenti di ottimizzazione
+- **Frame-by-frame descriptions** — what appears in each second of the video
+- **Analysis report** with:
+    - Process objective
+    - Step-by-step operational flow
+    - Identified technical elements
+    - Observations and bottlenecks
+    - Optimization suggestions
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Installa dipendenze
+# 1. Install dependencies
 pip install -r requirements.txt
 
-# 2. Configura API key
+# 2. Configure API key
 cp .env.example .env
-# modifica .env con la tua ANTHROPIC_API_KEY
+# edit .env with your ANTHROPIC_API_KEY
 
-# 3. Metti i video in videos/
+# 3. Place videos in videos/
 
-# 4. Lancia
+# 4. Run
 python analyze_video.py
 ```
 
-Risultati in `output/`.
+Results saved to `output/`.
 
 ---
 
-## Tecnologie
+## Technologies
 
-| Componente | Tecnologia |
+| Component | Technology |
 |---|---|
-| Estrazione frame | ffmpeg |
+| Frame extraction | ffmpeg |
 | Vision AI | Claude Opus 4.6 (Vision) |
-| Analisi processo | Claude Opus 4.6 |
+| Process analysis | Claude Opus 4.6 (adaptive thinking) |
 | SDK | anthropic (Python) |
+
+---
+
+## Navigation
+
+- **[Quick Start](quickstart.md)** — Up and running in 5 minutes
+- **[How it works](architettura.md)** — Detailed technical pipeline
+- **[Usage](utilizzo.md)** — All commands and options
+- **[Output](output.md)** — Format of generated files
+- **[Examples](esempi.md)** — Real analyses with report excerpts
+- **[API Costs](costi.md)** — Cost estimates per video
+- **[Troubleshooting](troubleshooting.md)** — Solutions to common errors

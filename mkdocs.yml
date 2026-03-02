@@ -1,45 +1,77 @@
-site_name: AI Video Analyzer
-site_description: Analizza video muti con Claude Vision e genera report del processo
+site_name: AI Report Video Analyzer
+site_description: Analyze mute screen recordings with Claude Vision and generate structured process reports
 site_author: hp
+site_url: https://github.com/hp/ai-report-video-analizer
 docs_dir: docs
 
 theme:
   name: material
-  language: it
+  language: en
   palette:
     - scheme: default
       primary: indigo
       accent: indigo
       toggle:
         icon: material/brightness-7
-        name: Passa a tema scuro
+        name: Switch to dark mode
     - scheme: slate
       primary: indigo
       accent: indigo
       toggle:
         icon: material/brightness-4
-        name: Passa a tema chiaro
+        name: Switch to light mode
   features:
     - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
+    - navigation.expand
     - navigation.top
+    - navigation.indexes
     - content.code.copy
     - content.code.annotate
+    - search.highlight
+    - search.suggest
 
 nav:
   - Home: index.md
-  - Installazione: installazione.md
-  - Utilizzo: utilizzo.md
-  - Output: output.md
+  - Getting Started:
+    - Quick Start: quickstart.md
+    - Installation: installazione.md
+    - ffmpeg Setup: ffmpeg.md
+  - Guide:
+    - How it works: architettura.md
+    - Usage: utilizzo.md
+    - Configuration: configurazione.md
+  - Output:
+    - Output files: output.md
+    - Examples: esempi.md
+  - Reference:
+    - CLI Reference: cli.md
+    - API Costs: costi.md
+    - Troubleshooting: troubleshooting.md
 
 markdown_extensions:
   - admonition
   - pymdownx.details
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - attr_list
   - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+plugins:
+  - search:
+      lang: en

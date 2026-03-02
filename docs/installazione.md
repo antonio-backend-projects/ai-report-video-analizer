@@ -1,35 +1,39 @@
-# Installazione
+# Installation
 
-## Requisiti
+## Requirements
 
 - Python 3.10+
-- ffmpeg installato nel sistema
-- API key Anthropic
+- ffmpeg installed on the system
+- Anthropic API key
 
 ---
 
 ## 1. ffmpeg
 
-ffmpeg è un tool di sistema, va installato separatamente da Python.
+ffmpeg is a system tool — it must be installed separately from Python.
 
 === "Windows"
 
     ```bash
-    # Con winget (incluso in Windows 11)
+    # With winget (included in Windows 11)
     winget install ffmpeg
 
-    # Con Chocolatey
+    # With Chocolatey
     choco install ffmpeg
 
-    # Con Scoop
+    # With Scoop
     scoop install ffmpeg
     ```
 
-    Dopo l'installazione apri un **nuovo** terminale e verifica:
+    After installation, open a **new** terminal and verify:
 
     ```bash
     ffmpeg -version
     ```
+
+    !!! info "ffmpeg not found after installation?"
+        See the [ffmpeg configuration](ffmpeg.md) page for details on how the script
+        searches for ffmpeg on Windows and how to handle non-standard install paths.
 
 === "macOS"
 
@@ -45,72 +49,73 @@ ffmpeg è un tool di sistema, va installato separatamente da Python.
 
 ---
 
-## 2. Dipendenze Python
+## 2. Python dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Il file `requirements.txt` installa:
+The `requirements.txt` installs:
 
-| Package | Uso |
+| Package | Purpose |
 |---|---|
-| `anthropic` | Client per Claude API (Vision + analisi) |
-| `python-dotenv` | Lettura API key da file `.env` |
-| `mkdocs-material` | Questa documentazione |
+| `anthropic` | Claude API client (Vision + analysis) |
+| `python-dotenv` | Read API key from `.env` file |
+| `mkdocs-material` | This documentation |
 
 ---
 
-## 3. API Key Anthropic
+## 3. Anthropic API key
 
-1. Vai su [console.anthropic.com](https://console.anthropic.com)
-2. Crea una API key
-3. Copia `.env.example` in `.env`:
+1. Go to [console.anthropic.com](https://console.anthropic.com)
+2. Create an API key
+3. Copy `.env.example` to `.env`:
 
     ```bash
     cp .env.example .env
     ```
 
-4. Incolla la tua chiave nel file `.env`:
+4. Paste your key into `.env`:
 
     ```
     ANTHROPIC_API_KEY=sk-ant-...
     ```
 
-!!! warning "Non committare il file .env"
-    Il file `.env` contiene la tua chiave privata. Non aggiungerlo mai a git.
+!!! warning "Do not commit .env"
+    The `.env` file contains your private key. Never add it to git.
+    It is already excluded by `.gitignore`.
 
 ---
 
-## 4. Verifica installazione
+## 4. Verify installation
 
 ```bash
 python analyze_video.py --help
 ```
 
-Output atteso:
+Expected output:
 
 ```
 usage: analyze_video.py [-h] [--fps FPS] [--batch-size BATCH_SIZE] [--keep-frames] [video]
 
-AI Video Analyzer — Analizza video con Claude Vision
+AI Video Analyzer — Analyze videos with Claude Vision
 ...
 ```
 
 ---
 
-## Struttura cartelle
+## Folder structure
 
 ```
-ai-video-analizer/
-├── videos/           ← metti qui i tuoi video
-├── output/           ← risultati (creata automaticamente)
-│   ├── frames/       ← screenshot PNG (solo con --keep-frames)
-│   ├── *_descrizioni.txt
-│   └── *_analisi.md
-├── docs/             ← questa documentazione
+ai-report-video-analizer/
+├── videos/           ← place your videos here
+├── output/           ← results (created automatically)
+│   ├── frames/       ← PNG screenshots (only with --keep-frames)
+│   ├── *_descriptions.txt
+│   └── *_analysis.md
+├── docs/             ← this documentation
 ├── analyze_video.py
 ├── requirements.txt
 ├── mkdocs.yml
-└── .env              ← la tua API key (non committare!)
+└── .env              ← your API key (do not commit!)
 ```
