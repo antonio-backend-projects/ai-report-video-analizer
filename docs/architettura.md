@@ -6,38 +6,121 @@ Technical description of the analysis pipeline.
 
 ## Full pipeline
 
-```
-VIDEO.mp4
-    │
-    ▼
-┌─────────────────────────────────────────┐
-│  STEP 1 — Frame extraction              │
-│  Tool: ffmpeg                           │
-│  Input: video.mp4                       │
-│  Output: temp_frames/video/frame_*.png  │
-└─────────────────────────────────────────┘
-    │
-    ▼  (batches of 10 frames)
-┌─────────────────────────────────────────┐
-│  STEP 2 — Frame description             │
-│  Model: claude-opus-4-6 (Vision)        │
-│  Input: base64 images + text prompt     │
-│  Output: text description per frame     │
-└─────────────────────────────────────────┘
-    │
-    ▼  (full descriptions text)
-┌─────────────────────────────────────────┐
-│  STEP 3 — Process analysis              │
-│  Model: claude-opus-4-6                 │
-│  Thinking: adaptive, effort=high        │
-│  Output: structured report (5 sections) │
-└─────────────────────────────────────────┘
-    │
-    ▼
-output/
-├── video_descriptions.txt
-└── video_analysis.md
-```
+=== "Visual only (default)"
+
+    ```
+    VIDEO.mp4
+        │
+        ▼
+    ┌─────────────────────────────────────────┐
+    │  STEP 1 — Frame extraction              │
+    │  Tool: ffmpeg                           │
+    │  Output: temp_frames/video/frame_*.png  │
+    └─────────────────────────────────────────┘
+        │
+        ▼  (batches of N frames)
+    ┌─────────────────────────────────────────┐
+    │  STEP 2 — Frame description             │
+    │  Model: claude-opus-4-6 (Vision)        │
+    │  Output: text description per frame     │
+    └─────────────────────────────────────────┘
+        │
+        ▼
+    ┌─────────────────────────────────────────┐
+    │  STEP 3 — Process analysis              │
+    │  Model: claude-opus-4-6                 │
+    │  Thinking: adaptive, effort=high        │
+    │  Output: structured report (5 sections) │
+    └─────────────────────────────────────────┘
+        │
+        ▼
+    output/
+    ├── video_descrizioni.txt
+    └── video_analisi.md
+    ```
+
+=== "Visual + Audio (--audio)"
+
+    ```
+    VIDEO.mp4
+        │
+        ├──────────────────────┐
+        ▼                      ▼
+    ┌──────────────┐   ┌───────────────────────┐
+    │  Frame       │   │  Audio extraction     │
+    │  extraction  │   │  Tool: ffmpeg → WAV   │
+    │  (ffmpeg)    │   └───────────────────────┘
+    └──────────────┘               │
+        │                          ▼
+        │               ┌───────────────────────┐
+        │               │  Whisper transcription │
+        │               │  Backend: selectable   │
+        │               └───────────────────────┘
+        │                          │
+        │                          ▼
+        │               ┌───────────────────────┐
+        │               │  Claude refines        │
+        │               │  transcript            │
+        │               └───────────────────────┘
+        │                          │
+        ▼  (batches)               │
+    ┌──────────────┐               │
+    │  Claude      │               │
+    │  Vision      │               │
+    │  description │               │
+    └──────────────┘               │
+        │                          │
+        └──────────┬───────────────┘
+                   ▼
+    ┌─────────────────────────────────────────┐
+    │  Process analysis (visual + audio)      │
+    │  Model: claude-opus-4-6                 │
+    │  Thinking: adaptive, effort=high        │
+    └─────────────────────────────────────────┘
+        │
+        ▼
+    output/
+    ├── video_descrizioni.txt
+    ├── video_trascrizione.txt
+    └── video_analisi.md
+    ```
+
+=== "Audio only (--audio-only)"
+
+    ```
+    VIDEO.mp4
+        │
+        ▼
+    ┌─────────────────────────────────────────┐
+    │  Audio extraction                       │
+    │  Tool: ffmpeg → WAV mono 16kHz          │
+    └─────────────────────────────────────────┘
+        │
+        ▼
+    ┌─────────────────────────────────────────┐
+    │  Whisper transcription                  │
+    │  Backend: openai-whisper | faster-      │
+    │           whisper | openai-api          │
+    └─────────────────────────────────────────┘
+        │
+        ▼
+    ┌─────────────────────────────────────────┐
+    │  Claude: transcript refinement          │
+    │  Fix hallucinations, punctuation        │
+    └─────────────────────────────────────────┘
+        │
+        ▼
+    ┌─────────────────────────────────────────┐
+    │  Claude: audio analysis                 │
+    │  Summary + structure + observations     │
+    │  Thinking: adaptive, effort=high        │
+    └─────────────────────────────────────────┘
+        │
+        ▼
+    output/
+    ├── video_trascrizione.txt
+    └── video_audio_analisi.md
+    ```
 
 ---
 

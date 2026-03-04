@@ -22,6 +22,61 @@ ANTHROPIC_API_KEY=sk-ant-api03-...
 
 ---
 
+### `WHISPER_BACKEND` *(optional — needed only with --audio / --audio-only)*
+
+Selects the audio transcription backend.
+
+```env
+WHISPER_BACKEND=faster-whisper
+```
+
+| Value | Description | Requires |
+|---|---|---|
+| `faster-whisper` | Local, CTranslate2 — fast, lightweight | `pip install faster-whisper` |
+| `openai-whisper` | Local, PyTorch — official OpenAI library | `pip install openai-whisper` |
+| `openai-api` | Cloud — OpenAI Whisper API | `pip install openai` + `OPENAI_API_KEY` |
+
+**Default:** `faster-whisper`
+
+See [Audio Transcription](audio.md) for a full backend comparison.
+
+---
+
+### `WHISPER_MODEL` *(optional)*
+
+Model size for local backends, or model name for `openai-api`.
+
+```env
+WHISPER_MODEL=large-v3
+```
+
+| Value | Backend | Size | Quality |
+|---|---|---|---|
+| `tiny` | local | ~39 MB | Basic |
+| `base` | local | ~74 MB | Good |
+| `small` | local | ~244 MB | Better |
+| `medium` | local | ~769 MB | High |
+| `large-v3` | local | ~1.5 GB | Best |
+| `whisper-1` | openai-api | cloud | High |
+
+**Default:** `large-v3` (local backends), `whisper-1` (openai-api)
+
+Can be overridden at runtime with `--whisper-model`.
+
+---
+
+### `OPENAI_API_KEY` *(optional — only for openai-api backend)*
+
+Your OpenAI API key. Required only when `WHISPER_BACKEND=openai-api`.
+
+```env
+OPENAI_API_KEY=sk-...
+```
+
+Obtain from [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
+
+---
+
 ## CLI parameters
 
 All parameters are passed on the command line at runtime.

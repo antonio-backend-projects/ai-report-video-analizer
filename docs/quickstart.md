@@ -150,5 +150,49 @@ output/
 
 ---
 
+---
+
+## Optional: enable audio transcription
+
+If your video has spoken content, install a Whisper backend and enable audio:
+
+```bash
+# Install faster-whisper (recommended)
+pip install faster-whisper
+```
+
+Add to `.env`:
+```
+WHISPER_BACKEND=faster-whisper
+WHISPER_MODEL=large-v3
+```
+
+Run with audio:
+```bash
+# Visual + audio integrated analysis
+python analyze_video.py videos/video.mp4 --audio
+
+# Audio-only: transcription + text analysis (no Vision API)
+python analyze_video.py videos/video.mp4 --audio-only
+```
+
+See [Audio Transcription](audio.md) for full setup details.
+
+---
+
+## Optional: run with Docker
+
+```bash
+# Build the container
+docker compose build
+
+# Run analysis (videos/ and output/ are on your local filesystem)
+docker compose run --rm analyzer
+```
+
+See [Docker](docker.md) for full instructions.
+
+---
+
 !!! success "Done!"
     See the **[Usage](utilizzo.md)** section for all available options.

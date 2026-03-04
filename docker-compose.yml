@@ -1,0 +1,32 @@
+services:
+  analyzer:
+    build:
+      context: .
+      args:
+        # Il backend Whisper viene letto da .env (o usa faster-whisper come default)
+        WHISPER_BACKEND: ${WHISPER_BACKEND:-faster-whisper}
+
+    # Legge ANTHROPIC_API_KEY, WHISPER_BACKEND, WHISPER_MODEL, OPENAI_API_KEY dal .env
+    env_file:
+      - .env
+
+    volumes:
+      # Video di input (read-only nel container)
+      - ./videos:/app/videos:ro
+      # Output: file system locale, NON nel container
+      - ./output:/app/output
+      # Cache modelli Whisper — persistente tra le run per evitare re-download
+      - whisper_cache_hf:/root/.cache/huggingface
+      - whisper_cache_openai:/root/.cache/whisper
+
+    # Nessun comando di default: passa i flag via "docker compose run"
+    # Esempi:
+    #   docker compose run --rm analyzer
+    #   docker compose run --rm analyzer videos/mio.mp4 --audio
+    #   docker compose run --rm analyzer --audio-only
+    #   docker compose run --rm analyzer --audio --whisper-model medium
+    command: []
+
+volumes:
+  whisper_cache_hf:
+  whisper_cache_openai:

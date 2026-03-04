@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Output e temp (montati via volumi Docker al runtime)
+output/
+temp_frames/
+
+# Git
+.git/
+.gitignore
+
+# Documentazione (non serve nell'immagine)
+docs/
+mkdocs.yml
+
+# Segreti (passati via env_file in compose, non copiati nell'immagine)
+.env
+
+# OS
+.DS_Store
+Thumbs.db

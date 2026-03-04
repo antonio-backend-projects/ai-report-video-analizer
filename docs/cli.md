@@ -8,6 +8,7 @@ Complete documentation of all commands and flags.
 
 ```bash
 python analyze_video.py [VIDEO] [--fps FPS] [--batch-size N] [--keep-frames]
+                        [--audio] [--audio-only] [--whisper-model MODEL]
 ```
 
 ---
@@ -79,6 +80,65 @@ python analyze_video.py --keep-frames
 
 ---
 
+### `--audio`
+
+**Default:** disabled (boolean flag)
+
+Enables Whisper audio transcription. The transcript is extracted, corrected by Claude, and integrated into the process analysis alongside the visual frame descriptions.
+
+```bash
+python analyze_video.py --audio
+python analyze_video.py videos/tutorial.mp4 --audio
+```
+
+Requires `WHISPER_BACKEND` set in `.env` and the corresponding package installed.
+See [Audio Transcription](audio.md) for setup details.
+
+---
+
+### `--audio-only`
+
+**Default:** disabled (boolean flag)
+
+Skips the visual pipeline entirely. Only transcribes audio and generates a text-based analysis (summary, content structure, key topics, actions/decisions).
+
+```bash
+python analyze_video.py --audio-only
+python analyze_video.py videos/meeting.mp4 --audio-only
+```
+
+**Output:** `output/<name>_trascrizione.txt` + `output/<name>_audio_analisi.md`
+
+!!! tip "Use for spoken content"
+    Ideal for meetings, webinars, training videos, or any video where the spoken
+    content carries more information than the visuals.
+
+---
+
+### `--whisper-model MODEL`
+
+**Default:** `WHISPER_MODEL` from `.env` (default: `large-v3`)
+**Type:** string
+
+Overrides the Whisper model size at runtime without editing `.env`.
+
+```bash
+python analyze_video.py --audio --whisper-model medium
+python analyze_video.py --audio-only --whisper-model base
+```
+
+| Model | Size | Speed | Quality |
+|---|---|---|---|
+| `tiny` | ~39 MB | Very fast | Basic |
+| `base` | ~74 MB | Fast | Good |
+| `small` | ~244 MB | Medium | Better |
+| `medium` | ~769 MB | Slow | High |
+| `large-v3` | ~1.5 GB | Very slow | Best |
+
+For `openai-api` backend, use `whisper-1` (cloud model, size irrelevant).
+
+---
+
 ### `-h` / `--help`
 
 Shows the help message.
@@ -92,7 +152,7 @@ python analyze_video.py --help
 ## Common combinations
 
 ```bash
-# Specific video, standard analysis
+# Specific video, standard visual analysis
 python analyze_video.py videos/process.mp4
 
 # Specific video, more detail, with screenshots
@@ -104,7 +164,16 @@ python analyze_video.py videos/long.mp4 --fps 0.5
 # Dense UI (forms, tables), small batches for more accuracy
 python analyze_video.py videos/crm.mp4 --fps 1 --batch-size 5 --keep-frames
 
-# All videos in videos/, fast analysis
+# Full analysis: visual frames + audio transcript integrated
+python analyze_video.py videos/tutorial.mp4 --audio
+
+# Audio-only: transcription + text analysis (fastest, no Vision API)
+python analyze_video.py videos/meeting.mp4 --audio-only
+
+# Audio-only with faster model (less accurate but quicker)
+python analyze_video.py videos/meeting.mp4 --audio-only --whisper-model base
+
+# All videos in videos/, fast visual analysis
 python analyze_video.py --fps 0.5
 
 # Windows with special characters in output
@@ -115,7 +184,13 @@ python -X utf8 analyze_video.py videos/process.mp4
 
 ## Runtime output
 
-During execution, 3 phases are shown:
+Phases shown depend on the mode selected:
+
+- **Visual only** (default): 3 steps
+- **--audio** (visual + audio): 4 steps
+- **--audio-only**: 2 steps (audio extraction + audio analysis)
+
+Example with `--audio`:
 
 ```
 ============================================================
@@ -123,26 +198,32 @@ During execution, 3 phases are shown:
 ============================================================
   Duration: 245.3s  |  Estimated frames: 245  |  FPS: 1.0
 
-[1/3] Extracting frames with ffmpeg...
-  Running ffmpeg...
-  Extracted 245 frames
+[1/4] Estrazione e trascrizione audio...
+  Trascrizione audio con backend 'faster-whisper', modello 'large-v3'...
+  [whisper] Carico modello 'large-v3' (faster-whisper)...
+  Raffinamento trascrizione con Claude...
+  Trascrizione salvata -> output/process_trascrizione.txt
 
-[2/3] Describing frames with Claude Vision...
-  Total frames: 245  |  Batch size: 10
-  Batch 1/25: 10 frames...
-  Batch 2/25: 10 frames...
+[2/4] Estrazione frame con ffmpeg...
+  Eseguendo ffmpeg...
+  Estratti 245 frame
+
+[3/4] Descrizione frame con Claude Vision...
+  Totale frame: 245  |  Batch da: 10
+  Batch 1/25: 10 frame...
+  Batch 2/25: 10 frame...
   ...
-  Descriptions saved -> output/process_descriptions.txt
+  Descrizioni salvate -> output/process_descrizioni.txt
 
-[3/3] Analyzing process with Claude...
+[4/4] Analisi del processo con Claude...
 
 ------------------------------------------------------------
-## 1. PROCESS OBJECTIVE
-[real-time streaming output...]
+## 1. OBIETTIVO DEL PROCESSO
+[output in streaming real-time...]
 ------------------------------------------------------------
 
-  Analysis saved -> output/process_analysis.md
-  Temporary frames removed
+  Analisi salvata -> output/process_analisi.md
+  File temporanei rimossi
 ```
 
 !!! note "Description reuse"
@@ -163,3 +244,5 @@ During execution, 3 phases are shown:
 | `1` | Error: unsupported video format |
 | `1` | Error: fps out of range (0.1-30) |
 | `1` | Error: videos/ folder not found |
+| `1` | Error: invalid WHISPER_BACKEND value |
+| `1` | Error: OPENAI_API_KEY missing (openai-api backend) |

@@ -1,3 +1,22 @@
+# ─── Core (obbligatorio) ───────────────────────────────────────────────────────
 anthropic>=0.40.0
 python-dotenv>=1.0.0
+
+# ─── Docs (opzionale) ──────────────────────────────────────────────────────────
 mkdocs-material>=9.0.0
+
+# ─── Whisper: scegli UN solo backend ──────────────────────────────────────────
+#
+# Opzione 1: faster-whisper (raccomandato — locale, veloce, senza PyTorch)
+#   pip install faster-whisper
+# faster-whisper>=1.0.0
+#
+# Opzione 2: openai-whisper (ufficiale OpenAI — locale, richiede PyTorch ~2GB)
+#   pip install openai-whisper
+# openai-whisper>=20231117
+#
+# Opzione 3: openai-api (cloud, nessuna installazione locale, richiede OPENAI_API_KEY)
+#   pip install openai
+# openai>=1.0.0
+#
+# Imposta WHISPER_BACKEND nel .env per selezionare il backend scelto.

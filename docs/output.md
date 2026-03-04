@@ -1,6 +1,6 @@
 # Output
 
-For each analyzed video, **2 files** are produced in the `output/` folder, plus optional screenshots.
+Depending on the mode, **2 to 4 files** are produced in the `output/` folder per video.
 
 ---
 
@@ -88,7 +88,47 @@ entering customer data, selecting products, and confirming the order.
 
 ---
 
-## File 3: `output/frames/` *(optional)*
+## File 3: `_trascrizione.txt` *(with --audio or --audio-only)*
+
+**What it is:** the audio transcript corrected by Claude — Whisper hallucinations removed, punctuation added, text divided into logical paragraphs.
+
+```
+Buongiorno a tutti. Oggi vedremo come configurare l'accesso VPN aziendale
+partendo dall'installazione del client fino alla connessione finale.
+
+Il primo step è scaricare il client dal portale IT interno...
+```
+
+**Reuse caching:** if the file already exists, Whisper transcription is automatically skipped on re-runs (same behavior as `_descrizioni.txt` for frame descriptions).
+
+---
+
+## File 4: `_audio_analisi.md` *(with --audio-only)*
+
+**What it is:** structured report generated from the audio transcript only. Includes:
+
+```markdown
+# Analisi Audio: meeting.mp4
+
+## 1. SOMMARIO ESECUTIVO
+...
+
+## 2. STRUTTURA DEL CONTENUTO
+...
+
+## 3. ELEMENTI TECNICI E TERMINOLOGIA
+...
+
+## 4. AZIONI E DECISIONI IDENTIFICATE
+...
+
+## 5. OSSERVAZIONI SULLA COMUNICAZIONE
+...
+```
+
+---
+
+## File 5: `output/frames/` *(optional)*
 
 Available only with `--keep-frames`. Contains the extracted PNG screenshots:
 
@@ -108,8 +148,10 @@ Each file is named `frame_NNNN.png` where NNNN is the sequential number (corresp
 
 ## Summary
 
-| File | Location | Always present |
+| File | Location | Produced when |
 |---|---|---|
-| `<name>_descriptions.txt` | `output/` | Yes |
-| `<name>_analysis.md` | `output/` | Yes |
+| `<name>_descrizioni.txt` | `output/` | Default + `--audio` |
+| `<name>_analisi.md` | `output/` | Default + `--audio` |
+| `<name>_trascrizione.txt` | `output/` | `--audio` or `--audio-only` |
+| `<name>_audio_analisi.md` | `output/` | `--audio-only` only |
 | `frames/<name>/frame_NNNN.png` | `output/frames/` | Only with `--keep-frames` |

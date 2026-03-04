@@ -186,9 +186,9 @@ python analyze_video.py --fps 2
 python analyze_video.py --batch-size 5
 ```
 
-**Check the descriptions**: look at the `_descriptions.txt` file to see if the individual frame-by-frame descriptions are accurate. If they are but the final analysis is poor, the problem is in step 3.
+**Check the descriptions**: look at the `_descrizioni.txt` file to see if the individual frame-by-frame descriptions are accurate. If they are but the final analysis is poor, the problem is in step 3.
 
-**Regenerate only the analysis**: if the descriptions are correct, you can regenerate only step 3 without re-paying for Vision — the `_descriptions.txt` file will be reused automatically.
+**Regenerate only the analysis**: if the descriptions are correct, you can regenerate only the analysis without re-paying for Vision — the `_descrizioni.txt` file will be reused automatically.
 
 ---
 
@@ -200,12 +200,12 @@ The script stops during step 2 (frame description).
 
 ### Solution
 
-Relaunch the script with the same parameters. If the `_descriptions.txt` file exists partially, delete it and relaunch:
+Relaunch the script with the same parameters. If the `_descrizioni.txt` file exists partially, delete it and relaunch:
 
 ```bash
 # Delete partial descriptions
-del output\video_descriptions.txt   # Windows
-rm output/video_descriptions.txt    # macOS/Linux
+del output\video_descrizioni.txt   # Windows
+rm output/video_descrizioni.txt    # macOS/Linux
 
 # Relaunch
 python analyze_video.py videos/video.mp4
@@ -260,3 +260,185 @@ make fewer total calls:
 ```bash
 python analyze_video.py --batch-size 15
 ```
+
+---
+
+## "Nessuna traccia audio trovata nel video"
+
+### Error
+
+```
+RuntimeError: Nessuna traccia audio trovata nel video o errore di estrazione.
+Se il video è muto, usa la pipeline senza --audio.
+```
+
+### Cause
+
+The video has no audio stream (screen recording without microphone), or ffmpeg could not extract it.
+
+### Solution
+
+Remove `--audio` or `--audio-only` from the command:
+
+```bash
+python analyze_video.py videos/mute_screen_recording.mp4
+```
+
+To verify if a video has audio:
+```bash
+ffprobe -i videos/mio.mp4 2>&1 | grep Audio
+```
+
+If no output appears, the video has no audio track.
+
+---
+
+## "WHISPER_BACKEND non valido"
+
+### Error
+
+```
+ERRORE: WHISPER_BACKEND='xyz' non valido. Valori accettati: faster-whisper, openai-whisper, openai-api
+```
+
+### Solution
+
+Check `.env` and set one of the valid values:
+
+```env
+WHISPER_BACKEND=faster-whisper
+```
+
+---
+
+## "OPENAI_API_KEY non trovata"
+
+### Error
+
+```
+ERRORE: WHISPER_BACKEND=openai-api richiede OPENAI_API_KEY nel .env
+```
+
+### Solution
+
+Add your OpenAI key to `.env`:
+
+```env
+OPENAI_API_KEY=sk-...
+```
+
+Obtain from [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
+
+---
+
+## Whisper package not installed
+
+### Error
+
+```
+ModuleNotFoundError: No module named 'faster_whisper'
+```
+
+or:
+
+```
+ModuleNotFoundError: No module named 'whisper'
+```
+
+### Solution
+
+Install the backend matching your `WHISPER_BACKEND` setting:
+
+```bash
+# faster-whisper
+pip install faster-whisper
+
+# openai-whisper
+pip install openai-whisper
+
+# openai-api
+pip install openai
+```
+
+---
+
+## Whisper transcription is slow
+
+### Symptom
+
+Transcription takes a very long time (tens of minutes for a short video).
+
+### Causes and solutions
+
+**Large model on CPU**: `large-v3` on CPU is slow. Use a smaller model:
+
+```bash
+python analyze_video.py --audio --whisper-model medium
+python analyze_video.py --audio --whisper-model base   # fastest
+```
+
+**Use the cloud API** instead of local transcription:
+
+```env
+# .env
+WHISPER_BACKEND=openai-api
+WHISPER_MODEL=whisper-1
+OPENAI_API_KEY=sk-...
+```
+
+---
+
+## Poor transcription quality
+
+### Symptom
+
+The transcript contains errors, repeated phrases, or garbled text.
+
+### Causes and solutions
+
+**Use a larger model**:
+```bash
+python analyze_video.py --audio --whisper-model large-v3
+```
+
+**Audio quality**: low-quality microphone or background noise reduces accuracy for all Whisper backends.
+
+**Claude refinement**: the transcript refinement step (always active) already corrects common Whisper hallucinations. If the raw transcript is very poor, Claude may not be able to fully recover it.
+
+**Try a different backend**: `openai-whisper` and `faster-whisper` can produce slightly different results on the same audio — try both if quality is an issue.
+
+---
+
+## mp3 compression fails (openai-api backend)
+
+### Error
+
+```
+RuntimeError: Errore compressione audio mp3:
+```
+
+### Cause
+
+The `libmp3lame` encoder is missing from the ffmpeg build.
+
+### Solution
+
+Install a full ffmpeg build that includes mp3 encoding:
+
+```bash
+# Windows
+winget install ffmpeg
+
+# macOS
+brew install ffmpeg
+
+# Linux
+sudo apt install ffmpeg
+```
+
+Verify mp3 support:
+```bash
+ffmpeg -codecs 2>/dev/null | grep mp3
+```
+
+You should see `libmp3lame` in the output.

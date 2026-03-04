@@ -1,6 +1,6 @@
 # Real Examples
 
-Examples of analyses performed on real CRM process videos.
+Examples of analyses performed on real process and meeting videos.
 
 ---
 
@@ -75,6 +75,51 @@ The report identified:
 
 ---
 
+## Example 3 — Team meeting (audio-only)
+
+**Video**: `riunione-2026-03-01.mp4`
+**Duration**: ~45 minutes
+**Mode**: `--audio-only` (no Vision API)
+**Whisper backend**: `openai-api`
+
+### Command used
+
+```bash
+python analyze_video.py videos/riunione-2026-03-01.mp4 --audio-only
+```
+
+### Runtime output
+
+```
+[1/2] Estrazione e trascrizione audio...
+  Compressione audio → mp3 32k (parlato)...
+  Dimensione mp3: 6.4 MB
+  Trascrizione audio con backend 'openai-api', modello 'whisper-1'...
+  Raffinamento trascrizione con Claude...
+  Trascrizione salvata -> output/riunione-2026-03-01_trascrizione.txt
+
+[2/2] Analisi audio con Claude...
+```
+
+### Excerpt from the generated audio analysis
+
+```markdown
+## 1. SOMMARIO ESECUTIVO
+La riunione riguarda la pianificazione del rilascio della versione 3.0 del software
+gestionale. Il team discute le priorità delle funzionalità rimanenti, i tempi di
+consegna e la distribuzione del carico di lavoro tra i team frontend e backend.
+Il messaggio principale è che il rilascio è confermato per il 15 aprile, con
+possibilità di slittamento di una settimana per il modulo di reportistica.
+
+## 4. AZIONI E DECISIONI IDENTIFICATE
+- Mario completa il modulo di autenticazione entro venerdì
+- Sara prepara i test di regressione per lunedì prossimo
+- Il team si riunisce giovedì per il review finale della roadmap
+- La funzionalità di export PDF viene rimossa dalla v3.0 e spostata alla v3.1
+```
+
+---
+
 ## Typical use cases
 
 ### UX flow analysis
@@ -83,15 +128,29 @@ The report identified:
 python analyze_video.py videos/user-session.mp4 --fps 2
 ```
 
-You get: every user interaction documented with timestamp, UI element involved, visible result.
+Every user interaction documented with timestamp, UI element involved, visible result.
 
-### Tutorial documentation
+---
+
+### Narrated tutorial (visual + audio)
 
 ```bash
-python analyze_video.py videos/software-tutorial.mp4 --fps 1 --keep-frames
+python analyze_video.py videos/software-tutorial.mp4 --fps 1 --audio
 ```
 
-You get: step-by-step tutorial with a screenshot for each step.
+Step-by-step process report enriched with the spoken explanations from the narrator.
+
+---
+
+### Meeting / webinar transcription
+
+```bash
+python analyze_video.py videos/webinar.mp4 --audio-only
+```
+
+Clean transcript + structured summary with key topics, decisions, and action items.
+
+---
 
 ### Business process audit
 
@@ -99,7 +158,9 @@ You get: step-by-step tutorial with a screenshot for each step.
 python analyze_video.py videos/operational-workflow.mp4 --fps 1 --batch-size 5
 ```
 
-You get: analysis focusing on bottlenecks and optimization suggestions.
+Analysis focusing on bottlenecks and optimization suggestions.
+
+---
 
 ### Long video (>15 min)
 
@@ -111,6 +172,17 @@ Reduces frames and API calls to keep costs down for very long videos.
 
 ---
 
+### Long meeting with audio
+
+```bash
+python analyze_video.py videos/long-meeting.mp4 --audio-only --whisper-model large-v3
+```
+
+For recordings over 1 hour, the audio is automatically compressed and chunked if needed.
+No manual intervention required.
+
+---
+
 ## FPS comparison on the same video
 
 | fps | Frames | Estimated cost | Analysis quality |
@@ -119,4 +191,4 @@ Reduces frames and API calls to keep costs down for very long videos.
 | 1.0 | 320 | ~$0.43 | **Optimal for most cases** |
 | 2.0 | 640 | ~$0.77 | Useful for fast processes |
 
-*Indicative values for a ~320-second video.*
+*Indicative values for a ~320-second video, visual only.*
