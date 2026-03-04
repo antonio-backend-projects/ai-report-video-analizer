@@ -120,6 +120,103 @@ possibilità di slittamento di una settimana per il modulo di reportistica.
 
 ---
 
+## Example 4 — TED Talk with visual + audio (included sample)
+
+**Video**: `ted_clint_smith.mp4` *(included in `videos/` — ready to run)*
+**Duration**: ~262 seconds
+**Extracted frames**: 263 (fps=1)
+**Mode**: `--audio` (visual + Whisper transcription integrated)
+**Whisper backend**: `faster-whisper`, model `base`
+
+### Command used
+
+```bash
+python analyze_video.py videos/ted_clint_smith.mp4 --audio --whisper-model base
+```
+
+### Runtime output
+
+```
+============================================================
+  VIDEO: ted_clint_smith.mp4
+============================================================
+  Durata: 262.6s  |  Frame stimati: 262  |  FPS: 1.0
+
+[1/4] Estrazione e trascrizione audio...
+  Trascrizione audio con backend 'faster-whisper', modello 'base'...
+  [whisper] Carico modello 'base' (faster-whisper)...
+  Raffinamento trascrizione con Claude...
+  Trascrizione salvata -> output/ted_clint_smith_trascrizione.txt
+
+[2/4] Estrazione frame con ffmpeg...
+  Estratti 263 frame
+
+[3/4] Descrizione frame con Claude Vision...
+  Totale frame: 263  |  Batch da: 10
+  Batch 1/27: 10 frame...
+  [...]
+  Batch 27/27: 3 frame...
+  Descrizioni salvate -> output/ted_clint_smith_descrizioni.txt
+
+[4/4] Analisi del processo con Claude...
+  Analisi salvata -> output/ted_clint_smith_analisi.md
+```
+
+### Corrected transcript (`_trascrizione.txt`)
+
+```
+Dr. Martin Luther King, Jr., in a 1968 speech where he reflects upon the civil
+rights movement, states, "In the end, we will remember not the words of our
+enemies, but the silence of our friends."
+
+As a teacher, I've internalized this message. Every day, all around us, we see
+the consequences of silence manifest themselves in the form of discrimination,
+violence, genocide, and war. [...]
+
+Silence is the residue of fear. It is feeling your flaws gut-wrench, guillotine
+your tongue. It is the air retreating from your chest because it doesn't feel
+safe in your lungs. Silence is Rwandan genocide. Silence is Katrina. [...]
+
+So this year, instead of giving something up, I will live every day as if there
+were a microphone tucked under my tongue, a stage on the underside of my
+inhibition. Because who has to have a soapbox when all you've ever needed is
+your voice?
+```
+
+*Zero hallucinations. Poetic lines and proper nouns correctly captured by model `base`.*
+
+### Excerpt from the generated report (`_analisi.md`)
+
+```markdown
+## 1. PROCESS OBJECTIVE
+
+Clint Smith intends to **persuade the audience to break their silence in the face
+of injustice**, using the TED Talk as a vehicle for spoken-word poetry blended
+with autobiographical narrative.
+
+| Level | Expected outcome |
+|---|---|
+| **Cognitive** | Audience internalizes the thesis: "silence is the residue of fear" |
+| **Emotional** | Visceral response through concrete images (Christian beaten, the homeless man) |
+| **Behavioral** | Push to action: speak, tell your truth |
+
+## 4. CRITICAL OBSERVATIONS
+
+- **Rhetorical structure**: chiastic mirror structure (A-B-C-X-C'-B'-A') — every
+  second is functional; 3 silence cases in the narrative are rewritten as 3 acts
+  of speech in the resolution
+- **Gesture as parallel sign system**: hands in pockets = silence/vulnerability;
+  open palms upward = offering/question; fist raised = determination — all
+  synchronized frame-by-frame with the spoken text
+- **Deliberate final pause**: Smith stops with ~2 minutes still on the timer.
+  Six seconds of chosen silence after a talk against passive silence — the most
+  elegant example of form matching content in the entire piece
+- **Production note**: 12-second branded intro (4.6% of total runtime) risks
+  viewer drop-off before Smith speaks; the MLK quote would be a stronger cold open
+```
+
+---
+
 ## Typical use cases
 
 ### UX flow analysis
