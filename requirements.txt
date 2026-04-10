@@ -5,6 +5,9 @@ python-dotenv>=1.0.0
 # ─── Docs (opzionale) ──────────────────────────────────────────────────────────
 mkdocs-material>=9.0.0
 
+# ─── Provider alternativi (opzionale) ──────────────────────────────────────────
+# openai>=1.0.0   # richiesto per LLM_PROVIDER=kimi oppure WHISPER_BACKEND=openai-api
+
 # ─── Whisper: scegli UN solo backend ──────────────────────────────────────────
 #
 # Opzione 1: faster-whisper (raccomandato — locale, veloce, senza PyTorch)

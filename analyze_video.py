@@ -2,7 +2,7 @@
 """
 AI Video Analyzer
 =================
-Estrae frame dai video, li descrive con Claude Vision (claude-opus-4-6),
+Estrae frame dai video, li descrive con un LLM Vision (Claude o Kimi),
 e genera un'analisi completa del processo mostrato.
 Supporta trascrizione audio opzionale tramite Whisper (3 backend).
 
@@ -17,7 +17,12 @@ Utilizzo:
   python analyze_video.py --whisper-model medium   # override modello Whisper
 
 Variabili .env:
-  ANTHROPIC_API_KEY   — obbligatoria
+  LLM_PROVIDER        — anthropic | kimi (default: anthropic)
+  ANTHROPIC_API_KEY   — obbligatoria se LLM_PROVIDER=anthropic
+  ANTHROPIC_MODEL     — override modello (default: claude-opus-4-6)
+  KIMI_API_KEY        — obbligatoria se LLM_PROVIDER=kimi
+  KIMI_MODEL          — override modello (default: kimi-latest)
+  KIMI_BASE_URL       — endpoint Moonshot (default: https://api.moonshot.ai/v1)
   WHISPER_BACKEND     — openai-whisper | faster-whisper | openai-api (default: faster-whisper)
   WHISPER_MODEL       — es. large-v3, medium, small, whisper-1 (default: large-v3)
   OPENAI_API_KEY      — solo se WHISPER_BACKEND=openai-api
@@ -31,7 +36,6 @@ import shutil
 import argparse
 from pathlib import Path
 
-import anthropic
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -40,8 +44,158 @@ load_dotenv()
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-MODEL = "claude-opus-4-6"
 SUPPORTED_EXTENSIONS = {".mp4", ".avi", ".mkv", ".mov", ".webm", ".flv"}
+
+# ─── LLM Provider config ──────────────────────────────────────────────────────
+
+LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "anthropic").lower()
+
+ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-opus-4-6")
+KIMI_MODEL = os.environ.get("KIMI_MODEL", "kimi-latest")
+KIMI_BASE_URL = os.environ.get("KIMI_BASE_URL", "https://api.moonshot.ai/v1")
+
+# ─── LLM Client abstraction ───────────────────────────────────────────────────
+
+class LLMClient:
+    """Interfaccia provider-agnostica per chiamate LLM (text + vision)."""
+
+    def vision_batch(self, items: list[dict], max_tokens: int) -> str:
+        raise NotImplementedError
+
+    def text(
+        self,
+        prompt: str,
+        max_tokens: int,
+        stream_print: bool = False,
+        high_effort: bool = False,
+    ) -> str:
+        raise NotImplementedError
+
+
+class AnthropicClient(LLMClient):
+    """Claude via SDK anthropic. Usa thinking adattivo + effort alto per analisi."""
+
+    def __init__(self):
+        import anthropic  # lazy
+        self._client = anthropic.Anthropic()
+        self._model = ANTHROPIC_MODEL
+
+    def _to_content(self, items):
+        content = []
+        for it in items:
+            if it["type"] == "text":
+                content.append({"type": "text", "text": it["text"]})
+            elif it["type"] == "image_b64":
+                content.append({
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": it["media_type"],
+                        "data": it["data"],
+                    },
+                })
+        return content
+
+    def vision_batch(self, items, max_tokens):
+        with self._client.messages.stream(
+            model=self._model,
+            max_tokens=max_tokens,
+            thinking={"type": "adaptive"},
+            messages=[{"role": "user", "content": self._to_content(items)}],
+        ) as stream:
+            response = stream.get_final_message()
+        return "\n".join(b.text for b in response.content if b.type == "text")
+
+    def text(self, prompt, max_tokens, stream_print=False, high_effort=False):
+        kwargs = dict(
+            model=self._model,
+            max_tokens=max_tokens,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        if high_effort:
+            kwargs["thinking"] = {"type": "adaptive"}
+            kwargs["output_config"] = {"effort": "high"}
+        with self._client.messages.stream(**kwargs) as stream:
+            if stream_print:
+                parts = []
+                for text in stream.text_stream:
+                    print(text, end="", flush=True)
+                    parts.append(text)
+                print()
+                return "".join(parts)
+            response = stream.get_final_message()
+            return "\n".join(b.text for b in response.content if b.type == "text")
+
+
+class KimiClient(LLMClient):
+    """Moonshot Kimi via SDK openai (OpenAI-compatible API)."""
+
+    def __init__(self):
+        import openai  # lazy
+        api_key = os.environ.get("KIMI_API_KEY")
+        if not api_key:
+            raise RuntimeError(
+                "LLM_PROVIDER=kimi richiede KIMI_API_KEY nel .env"
+            )
+        self._client = openai.OpenAI(api_key=api_key, base_url=KIMI_BASE_URL)
+        self._model = KIMI_MODEL
+
+    def _to_content(self, items):
+        content = []
+        for it in items:
+            if it["type"] == "text":
+                content.append({"type": "text", "text": it["text"]})
+            elif it["type"] == "image_b64":
+                content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{it['media_type']};base64,{it['data']}"
+                    },
+                })
+        return content
+
+    def vision_batch(self, items, max_tokens):
+        resp = self._client.chat.completions.create(
+            model=self._model,
+            max_tokens=max_tokens,
+            messages=[{"role": "user", "content": self._to_content(items)}],
+        )
+        return resp.choices[0].message.content or ""
+
+    def text(self, prompt, max_tokens, stream_print=False, high_effort=False):
+        # high_effort non ha equivalente diretto in Kimi: ignorato
+        if stream_print:
+            stream = self._client.chat.completions.create(
+                model=self._model,
+                max_tokens=max_tokens,
+                messages=[{"role": "user", "content": prompt}],
+                stream=True,
+            )
+            parts = []
+            for chunk in stream:
+                delta = chunk.choices[0].delta.content
+                if delta:
+                    print(delta, end="", flush=True)
+                    parts.append(delta)
+            print()
+            return "".join(parts)
+        resp = self._client.chat.completions.create(
+            model=self._model,
+            max_tokens=max_tokens,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return resp.choices[0].message.content or ""
+
+
+def make_llm_client() -> LLMClient:
+    if LLM_PROVIDER == "anthropic":
+        return AnthropicClient()
+    if LLM_PROVIDER == "kimi":
+        return KimiClient()
+    raise ValueError(
+        f"LLM_PROVIDER='{LLM_PROVIDER}' non valido. Valori accettati: anthropic, kimi"
+    )
+
 
 # ─── Audio / Whisper config ───────────────────────────────────────────────────
 
@@ -356,37 +510,34 @@ def encode_image(image_path: Path) -> str:
 
 
 def describe_frames_batch(
-    client: anthropic.Anthropic,
+    client: LLMClient,
     frames: list[Path],
     batch_idx: int,
     total_batches: int,
     fps: float
 ) -> str:
     """
-    Invia un batch di frame a Claude Vision per la descrizione.
+    Invia un batch di frame al LLM Vision per la descrizione.
     Ritorna il testo con le descrizioni.
     """
-    content = []
+    items = []
 
     for frame_path in frames:
         # Calcola il timestamp dal numero del frame
         frame_num = int(frame_path.stem.split("_")[1])
         timestamp = (frame_num - 1) / fps
 
-        content.append({
+        items.append({
             "type": "text",
             "text": f"Frame {frame_num} (t={timestamp:.1f}s):"
         })
-        content.append({
-            "type": "image",
-            "source": {
-                "type": "base64",
-                "media_type": "image/png",
-                "data": encode_image(frame_path)
-            }
+        items.append({
+            "type": "image_b64",
+            "media_type": "image/png",
+            "data": encode_image(frame_path)
         })
 
-    content.append({
+    items.append({
         "type": "text",
         "text": (
             "Analizza questi frame in ordine cronologico. "
@@ -398,28 +549,18 @@ def describe_frames_batch(
     })
 
     print(f"  Batch {batch_idx + 1}/{total_batches}: {len(frames)} frame...")
-
-    with client.messages.stream(
-        model=MODEL,
-        max_tokens=4096,
-        thinking={"type": "adaptive"},
-        messages=[{"role": "user", "content": content}]
-    ) as stream:
-        response = stream.get_final_message()
-
-    text_parts = [b.text for b in response.content if b.type == "text"]
-    return "\n".join(text_parts)
+    return client.vision_batch(items, max_tokens=4096)
 
 
 # ─── Claude Audio ─────────────────────────────────────────────────────────────
 
 def refine_transcript(
-    client: anthropic.Anthropic,
+    client: LLMClient,
     raw_transcript: str,
     video_name: str,
 ) -> str:
     """
-    Usa Claude per correggere il testo grezzo di Whisper:
+    Usa LLM per correggere il testo grezzo di Whisper:
     - Rimuove allucinazioni comuni (frasi ripetute, conclusioni inventate)
     - Aggiunge punteggiatura e paragrafi
     - NON inventa contenuto non presente nel testo
@@ -429,7 +570,7 @@ def refine_transcript(
     if len(raw_transcript) > 80_000:
         print(
             "  ATTENZIONE: Trascrizione molto lunga (>80k char). "
-            "Raffinamento Claude saltato per evitare limiti token. "
+            "Raffinamento LLM saltato per evitare limiti token. "
             "La trascrizione grezza verrà salvata direttamente."
         )
         return raw_transcript
@@ -456,19 +597,11 @@ Trascrizione grezza:
 
 Restituisci SOLO il testo corretto, senza spiegazioni o commenti aggiuntivi."""
 
-    with client.messages.stream(
-        model=MODEL,
-        max_tokens=8192,
-        messages=[{"role": "user", "content": prompt}]
-    ) as stream:
-        response = stream.get_final_message()
-
-    text_parts = [b.text for b in response.content if b.type == "text"]
-    return "\n".join(text_parts).strip()
+    return client.text(prompt, max_tokens=8192).strip()
 
 
 def analyze_audio_only(
-    client: anthropic.Anthropic,
+    client: LLMClient,
     video_name: str,
     transcript: str,
     duration: float,
@@ -515,26 +648,13 @@ Elenca azioni richieste all'utente, decisioni discusse, o next steps menzionati 
 
 Sii specifico e usa citazioni dirette dalla trascrizione a supporto delle osservazioni."""
 
-    result_parts = []
-    with client.messages.stream(
-        model=MODEL,
-        max_tokens=8192,
-        thinking={"type": "adaptive"},
-        output_config={"effort": "high"},
-        messages=[{"role": "user", "content": prompt}]
-    ) as stream:
-        for text in stream.text_stream:
-            print(text, end="", flush=True)
-            result_parts.append(text)
-
-    print()
-    return "".join(result_parts)
+    return client.text(prompt, max_tokens=8192, stream_print=True, high_effort=True)
 
 
 # ─── Process Analysis ─────────────────────────────────────────────────────────
 
 def analyze_process(
-    client: anthropic.Anthropic,
+    client: LLMClient,
     video_name: str,
     descriptions: str,
     duration: float,
@@ -600,21 +720,7 @@ Proponi miglioramenti concreti e specifici basati su quanto osservato.
 Sii specifico, usa i dettagli dei frame (e dell'audio se disponibile) per supportare le osservazioni.
 """
 
-    result_parts = []
-
-    with client.messages.stream(
-        model=MODEL,
-        max_tokens=8192,
-        thinking={"type": "adaptive"},
-        output_config={"effort": "high"},
-        messages=[{"role": "user", "content": prompt}]
-    ) as stream:
-        for text in stream.text_stream:
-            print(text, end="", flush=True)
-            result_parts.append(text)
-
-    print()
-    return "".join(result_parts)
+    return client.text(prompt, max_tokens=8192, stream_print=True, high_effort=True)
 
 
 # ─── Main Pipeline ────────────────────────────────────────────────────────────
@@ -630,7 +736,7 @@ def analyze_video(
 ) -> None:
     """Pipeline completa: (audio) → estrazione → descrizione → analisi."""
 
-    client = anthropic.Anthropic()
+    client = make_llm_client()
 
     temp_dir = Path("temp_frames") / video_path.stem
     output_dir = Path("output")
@@ -833,10 +939,19 @@ Esempi:
     if args.audio_only:
         args.audio = True
 
-    # Controllo API key
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        print("ERRORE: Variabile d'ambiente ANTHROPIC_API_KEY non trovata.")
-        print("Copia .env.example in .env e inserisci la tua API key.")
+    # Controllo API key in base al provider
+    if LLM_PROVIDER == "anthropic":
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            print("ERRORE: LLM_PROVIDER=anthropic richiede ANTHROPIC_API_KEY nel .env.")
+            print("Copia .env.example in .env e inserisci la tua API key.")
+            sys.exit(1)
+    elif LLM_PROVIDER == "kimi":
+        if not os.environ.get("KIMI_API_KEY"):
+            print("ERRORE: LLM_PROVIDER=kimi richiede KIMI_API_KEY nel .env.")
+            print("Copia .env.example in .env e inserisci la tua API key Kimi.")
+            sys.exit(1)
+    else:
+        print(f"ERRORE: LLM_PROVIDER='{LLM_PROVIDER}' non valido. Valori accettati: anthropic, kimi")
         sys.exit(1)
 
     # Controllo ffmpeg
